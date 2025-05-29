@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Venomous Bites Quiz{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="toastContainer"></div>
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'venom_learning' %}" class="d-inline-flex align-items-center text-secondary text-decoration-none">
+            <i class="fa fa-arrow-left me-2"></i>
+            Back to venomous bites Module
+        </a> 
+        <div>
+            <span class="badge bg-warning-subtle text-dark me-2" id="scoreDisplay">0 Points</span>
+            <span class="sbadge bg-danger text-white d-none" id="streakDisplay">Streak!</span>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="d-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 text-success" style="width: 48px; height: 48px;">
+            <i class="fa-solid fa-spider" style="font-size: 24px;"></i>
+        </div>
+        <h1 class="h2 fw-bold mb-0">Venomous Bites Quiz</h1>
+    </div>
+
+    {% if current_score > 0 %}
+    <div class="alert alert-info mb-4">
+        <div class="d-flex align-items-center">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            <div>
+                <strong>Previous Attempt: </strong> Your highest score is {{ current_score }} points.
+                {% if completed %}
+                <span class="badge bg-success ms-2">Completed</span>
+                {% endif %}
+                <div class="small text-muted">Total attempts: {{ attempts }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card" id="quizCard">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-title h4 fw-bold">
+                <span id="questionNumber">Question 1 of 5</span>
+            </div>
+            <span id="timer" class="text-danger fw-bold">20s</span>
+        </div>
+
+        <div class="progress" style="height: 4px;">
+            <div class="progress-bar bg-success" id="timerBar" style="width: 60%"></div>
+        </div>
+
+        <div class="card-body">
+            <h5 class="card-title mt-2" id="questionText">Question text here</h5>
+            <div class="d-flex flex-column mt-3">
+                <div>
+                  <div id="optionsList" class="list-group"></div>
+                </div>
+                <div>
+                  <div id="explanation" class="d-inline-flex alert alert-primary d-none small"><strong>Explanation: </strong> <span id="explanationText"></span></div>
+                </div>
+            </div>
+            <div class="text-end">
+                <button id="nextBtn" class="btn btn-danger d-none">Next Question &rarr;</button>
+              </div>
+        </div>
+    </div>
+
+    <div id="resultCard" class="d-none card mt-5">
+        <div class="result-card">
+          <h1 class="mb-3 fw-bold"><span class="me-2">🏆</span>Quiz Results</h4>
+          <div class="my-4">
+            <div class="h2 fw-bold" id="finalScore">You scored: 0 points!</div>
+            <p id="scoreMessage" class="text-muted">You're on your way to learning venomous bites first aid. Keep studying!</p>
+            <div class="badge rounded-pill bg-primary-subtle text-dark p-2 px-3 mt-2" id="badgeLabel">Starter Badge Earned!</div>
+          </div>
+
+
+          <!-- Form to submit score -->
+          <form method="post" id="scoreForm">
+            {% csrf_token %}
+            {{ form.module_slug }}
+            <input type="hidden" name="score" id="scoreInput" value="0">
+            <input type="hidden" name="time_spent" id="timeSpentInput" value="0">
+            <div class="d-flex justify-content-center gap-3">
+              <button type="submit" name="action" value="retry" class="btn btn-danger" id="retryBtn">Try Again</button>
+              <button type="submit" name="action" value="back" class="btn btn-light">Back to Venom Module</button>
+            </div>
+          </form>
+        </div>
+    </div>
+</div>
+
+  <script>
+     const questions = [
+  {
+    "question": "What should you do first if bitten by a snake?",
+    "options": [
+      { "text": "Stay calm and call emergency services", "isCorrect": true, "icon": "📞" },
+      { "text": "Apply ice to the bite area", "isCorrect": false, "icon": "🧊" },
+      { "text": "Try to suck out the venom", "isCorrect": false, "icon": "🚫" }
+    ],
+    "explanation": "Stay calm to slow venom spread and seek emergency help immediately."
+  },
+  {
+    "question": "How should you treat a spider bite?",
+    "options": [
+      { "text": "Clean the bite, apply a cool compress, and seek help if symptoms worsen", "isCorrect": true, "icon": "🕷️" },
+      { "text": "Apply ice directly to the wound and avoid moving the affected area", "isCorrect": false, "icon": "❄️" },
+      { "text": "Apply pressure to stop bleeding and apply heat", "isCorrect": false, "icon": "🔥" }
+    ],
+    "explanation": "Cleaning and cooling the bite helps reduce swelling. Medical help may be needed."
+  },
+  {
+    "question": "What is the first step if stung by an insect?",
+    "options": [
+      { "text": "Clean the sting site and apply a cool compress", "isCorrect": false, "icon": "🧊" },
+      { "text": "Apply a tourniquet above the sting site", "isCorrect": false, "icon": "🩸" },
+      { "text": "Remove the stinger (if visible), clean the site", "isCorrect": true, "icon": "🪛" }
+    ],
+    "explanation": "Removing the stinger prevents more venom release. Then clean the site."
+  },
+  {
+    "question": "How should you treat a scorpion sting?",
+    "options": [
+      { "text": "Apply pressure to stop venom spread", "isCorrect": false, "icon": "🧯" },
+      { "text": "Clean the sting, apply ice, and seek medical help for severe reactions", "isCorrect": true, "icon": "🦂" },
+      { "text": "Wash the area with hot water", "isCorrect": false, "icon": "🚿" }
+    ],
+    "explanation": "Cool the sting and monitor for allergic reactions. Some stings need urgent care."
+  },
+  {
+    "question": "What should you do in a remote area if you get bitten or stung?",
+    "options": [
+      { "text": "Immobilize the limb, clean wounds, and signal for help", "isCorrect": true, "icon": "🆘" },
+      { "text": "Walk to the nearest hospital without waiting", "isCorrect": false, "icon": "🚶" },
+      { "text": "Apply a tourniquet and wait for the venom to subside", "isCorrect": false, "icon": "⛔" }
+    ],
+    "explanation": "Minimize movement to slow venom spread. Signal or wait for help."
+  }
+]
+
+    let currentQuestion = 0;
+    let timeLeft = 20;
+    let score = 0;
+    let timerInterval = null;
+    let totalTimeSpent = 0;
+
+    function updateScoreDisplay() {
+      $('#scoreDisplay').text(`${score} Points`);
+    }
+
+    function showToast(title, message, isSuccess = true) {
+      const toastId = 'toast' + Date.now();
+      const toast = $(
+        `<div id="${toastId}" class="toast align-items-center text-bg-${isSuccess ? 'success' : 'danger'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">
+              <strong>${title}</strong><br>${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>`
+      );
+      $('#toastContainer').append(toast);
+      const bsToast = new bootstrap.Toast(document.getElementById(toastId));
+      bsToast.show();
+    }
+
+    function loadQuestion(index) {
+      const q = questions[index];
+      $('#questionNumber').text(`Question ${index + 1} of ${questions.length}`);
+      $('#questionText').text(q.question);
+      $('#questionImage').attr('src', q.image);
+      $('#explanation').addClass('d-none');
+      $('#explanationText').text('');
+      $('#nextBtn').addClass('d-none');
+
+      $('#optionsList').empty();
+      q.options.forEach((opt, i) => {
+        $('#optionsList').append(`
+          <div class="list-group-item option border d-flex align-items-center mb-3" data-index="${i}">
+            <span class="option-icon">${opt.icon}</span>
+            <span>${opt.text}</span>
+          </div>
+        `);
+      });
+
+      startTimer();
+    }
+
+    function startTimer() {
+      timeLeft = 20;
+      $('#timer').text(`${timeLeft}s`);
+      $('#timerBar').css('width', '100%');
+
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        $('#timer').text(`${timeLeft}s`);
+        $('#timerBar').css('width', `${(timeLeft / 20) * 100}%`);
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          showExplanation(-1);
+        }
+      }, 1000);
+    }
+
+    function showExplanation(selectedIndex) {
+      clearInterval(timerInterval);
+      const q = questions[currentQuestion];
+
+      // ⏱️ Track time spent on this question
+      const timeUsed = 20 - timeLeft;
+      totalTimeSpent += timeUsed;
+
+
+      $('.option').each(function(i) {
+        if (q.options[i].isCorrect) {
+          $(this).addClass('correct');
+        } else if (i === selectedIndex) {
+          $(this).addClass('incorrect');
+        }
+      });
+
+      if (selectedIndex !== -1) {
+        const isCorrect = q.options[selectedIndex].isCorrect;
+        if (isCorrect) score += 20;
+        updateScoreDisplay();
+        showToast(isCorrect ? "Correct!" : "Incorrect!", isCorrect ? "Well done!" : "Let's learn from this.", isCorrect);
+      } else {
+        showToast("Time's up!", "You didn’t answer in time.", false);
+      }
+
+      $('#explanationText').text(q.explanation);
+      $('#explanation').removeClass('d-none');
+      $('#nextBtn').removeClass('d-none');
+    }
+
+    $(document).on('click', '.option', function() {
+      if ($('#explanation').hasClass('d-none')) {
+        const selected = $(this).data('index');
+        showExplanation(selected);
+      }
+    });
+
+    $('#nextBtn').on('click', function() {
+    currentQuestion++;
+    if (currentQuestion < questions.length) {
+      loadQuestion(currentQuestion);
+    } 
+    else 
+    {
+      $('#quizCard').hide();
+      $('#finalScore').text(`You scored: ${score} points!`);
+      let message = "You're on your way to learning venom first aid. Keep studying!";
+      let badge = "Starter Badge Earned!";
+      $('#badgeLabel').removeClass().addClass('badge rounded-pill bg-primary-subtle text-dark p-2 px-3');
+      
+      if (score >= 80) {
+        message = "Outstanding! You're a venom first aid expert!";
+        badge = "Gold Badge Earned!";
+        $('#badgeLabel').removeClass().addClass('badge rounded-pill bg-warning-subtle text-dark p-2 px-3');
+      }
+      else if (score >= 60) {
+        message = "Great job! You know your venom treatment well!";
+        badge = "Silver Badge Earned!";
+        $('#badgeLabel').removeClass().addClass('badge rounded-pill bg-secondary-subtle text-dark p-2 px-3');
+      } else {
+        message = "You have not passed. Kindly retake the test!";
+      }
+      
+      $('#scoreMessage').text(message);
+      $('#badgeLabel').text(badge);
+      $('#resultCard').removeClass('d-none');
+      
+      // Update the hidden form field with the score
+      $('#scoreInput').val(score);
+      $('#timeSpentInput').val(totalTimeSpent);  // Add this line
+    }
+  });
+
+  $(document).ready(function() {
+    loadQuestion(currentQuestion);
+  });
+  
+</script>
+{% endblock %}

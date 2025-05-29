@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Modules{% endblock %}
+{% block content %}
+  <div class="container-fluid p-4">
+    <!-- Debug output -->
+
+    <h2 class="fw-bold">Training Modules</h2>
+    <p class="text-muted">Master life-saving skills through our comprehensive modules</p>
+    <div class="row g-4">
+
+      <!-- 1. Burns and Wounds -->
+      <div class="col-md-4">
+          <div class="card module-card">
+          <img
+            src="{% static 'images/burns2.png' %}"
+            class="card-img-top img-fluid"
+            alt="Burns"
+            width="300"
+            height="200"
+          />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Burns</h5>
+              {% if 'Burns First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">
+              Learn about different types of burns and how to treat them.
+            </p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Burns First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+              <a href="{% url 'burns_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/wound.png' %}" class="card-img-top img-fluid" alt="Fractures and Sprains" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Wounds</h5>
+              {% if 'Wounds First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Learn about different types of wounds and how to treat them.</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Wounds First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+              <a href="{% url 'wounds_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Fractures and Sprains -->
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/Fracture2.png' %}" class="card-img-top img-fluid" alt="Fractures and Sprains" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Fractures and Sprains</h5>
+              {% if 'Fractures and Sprains First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Identify and stabilize fractures and sprains.</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Fractures and Sprains First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+            <a href="{% url 'fractures_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Cardiac Emergencies -->
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/cardiac2.png' %}" class="card-img-top img-fluid" alt="Cardiac Emergencies" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Cardiac Emergencies</h5>
+              {% if 'Cardiac Emergencies First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Handle CPR and heart-related emergencies.</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Cardiac Emergencies First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+            <a href="{% url 'cardiac_emergencies_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Choking -->
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/choking2.png' %}" class="card-img-top img-fluid" alt="Choking" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Choking</h5>
+              {% if 'Choking First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Learn how to assist someone who is choking.</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">              
+              {% if 'Choking First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+            <a href="{% url 'choking_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Exposure -->
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/hot.png' %}" class="card-img-top img-fluid" alt="Exposure" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Heat Exposure</h5>
+              {% if 'Heat First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Identify and treat patients suffering from prolonged exposure to high temperatures</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Heat First Aid Quiz' in completed_modules %}
+              <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {%else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+              <a href="{% url 'heat_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/cold2.png' %}" class="card-img-top img-fluid" alt="Exposure" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Cold Exposure</h5>
+              {% if 'Cold First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Identify and treat patients suffering from prolonged exposure to low temperatures</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Cold First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+              <a href="{% url 'cold_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Poison/Venom/Allergies -->
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/poison.png' %}" class="card-img-top img-fluid" alt="Poison/Venom/Allergies" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Poison</h5>
+              {% if 'Poison First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Learn how to diagnose and treat poisoned patients.</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Poison First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+              <a href="{% url 'poison_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/venom.png' %}" class="card-img-top img-fluid" alt="Poison/Venom/Allergies" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Venom</h5>
+              {% if 'Venom First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Learn about venomous bites and its first aid.</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Venom First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+              <a href="{% url 'venom_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card module-card">
+          <img src="{% static 'images/allergy.png' %}" class="card-img-top img-fluid" alt="Poison/Venom/Allergies" width="300" height="200" />
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Allergy</h5>
+              {% if 'Allergic Reactions First Aid Quiz' in completed_modules %}
+                <span class="badge badge-advanced">completed</span>
+              {% endif %}
+            </div>
+            <p class="card-text text-muted">Learn about allergic reactions and its first aid.</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center mt-3">
+              {% if 'Allergic Reactions First Aid Quiz' in completed_modules %}
+                <p class="text-muted mb-0">100 points &nbsp;<i class="fa-regular fa-circle-check text-success"></i></p>
+              {% else %}
+                <p class="text-muted mb-0">100 points &nbsp;</p>
+              {% endif %}
+              <a href="{% url 'allergy_learning' %}" class="btn btn-danger">Start Module</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+{% endblock %}

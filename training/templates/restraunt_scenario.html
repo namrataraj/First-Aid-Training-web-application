@@ -1,0 +1,563 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Restaurant Emergency{% endblock %}
+
+{% block content %}'
+<div class="container-fluid p-4">
+
+    <!-- Back Link -->
+    <a href="{% url 'scenarios' %}" class="d-inline-flex align-items-center mb-4 text-secondary text-decoration-none">
+        <i class="fa fa-arrow-left me-2"></i>
+        Back to Scenarios
+    </a>
+            <!-- Display Django messages if any -->
+            {% if messages %}
+            <div class="mb-4">
+              {% for message in messages %}
+                <div class="alert alert-info">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+      
+          <!-- Display previous attempt details -->
+          {% if current_score > 0 %}
+          <div class="alert alert-info mb-4">
+              <div class="d-flex align-items-center">
+                  <i class="fa-solid fa-circle-info me-2"></i>
+                  <div>
+                      <strong>Previous Attempt: </strong> Your highest score is {{ current_score }} points.
+                      {% if completed %}
+                        <span class="badge bg-success ms-2">Completed</span>
+                      {% endif %}
+                      <div class="small text-muted">Total attempts: {{ attempts }}</div>
+                  </div>
+              </div>
+          </div>
+          {% endif %}
+
+    <!-- Title Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 fw-bold mb-0">Restaurant Emergency Scenario</h1>
+        <div class="text-muted small d-flex align-items-center">
+            <i class="fa-regular fa-clock me-1"></i> <span id="scenario-timer">Time: 0:00</span>
+        </div>        
+    </div>
+
+    <!-- Progress Tracker -->
+    <div class="mb-2 d-flex justify-content-between small text-muted fw-semibold">
+        <span>Start</span>
+        <span>Progress</span>
+        <span>Complete</span>
+    </div>
+    <div class="progress" style="height: 8px;">
+        <div class="progress-bar bg-danger" role="progressbar" style="width: 10%;" id="progress-bar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+
+    <div class="card mt-4 shadow-sm" style="min-height: 65vh;">  <!-- You can adjust 60vh as needed -->
+        <div class="card-body text-dark scenario-bg d-flex flex-column justify-content-end">
+            <!-- Semi-transparent overlay for better text readability -->
+            <div id="dialogbox" class="bg-white bg-opacity-75 p-4 rounded shadow-sm">
+
+                <!-- Avatar + Dialogue -->
+                <div class="d-flex align-items-start">
+                    <img src="{% static 'images/avatar_restraunt.png' %}" alt="Shallan avatar"
+                        class="rounded-2 me-3" style="width: 48px; height: 48px;">
+                    <div class="bg-light border rounded p-3 shadow-sm w-100">
+                        <p class="mb-0" id="dialogue-text"><strong>Narrator:</strong> "You and Shallan are seated at a cozy café. She's craving steak tonight."</p>
+                    </div>
+                </div>
+
+                <!-- Food Options -->
+                <div class="mt-4" id="options-container">
+                    <p class="fw-semibold" id="option-heading">What would you like to order?</p>
+                    <div class="d-inline-flex flex-column">
+                        <button class="btn btn-light text-start mb-2" onclick="selectOption('steak')">
+                            🥩 Order Steak with rosemary
+                        </button>
+                    </div>
+                </div>
+                
+            </div>
+            <div id="resultCard" class="d-none card mt-5">
+                <div class="result-card p-4">
+                    <div class="bg-white bg-opacity-50 p-4 rounded shadow-sm">
+                        <div class="bg-white bg-opacity-55 p-3 rounded shadow-sm">
+                            <h1 class="mb-3 fw-bold"><span class="me-2">🏆</span>Scenario Results</h1>
+                            <div class="my-4">
+                                <div class="h2 fw-bold" id="finalScore">You scored: 0 points!</div>
+                                <p id="scoreMessage" class="text-dark">
+                                    You're on your way to mastering being a first aider. Keep practicing!
+                                </p>
+                                <p id="timeMessage" class="small text-muted"></p>
+                                <p id="attemptsMessage" class="small text-muted"></p>
+                            </div>
+                            <form method="post" id="scoreForm">
+                                {% csrf_token %}
+                                {{ form.scenario_slug }}
+                                <input type="hidden" name="score" id="scoreInput" value="0">
+                                <input type="hidden" name="time_spent" id="timeSpentInput" value="0">
+                                <div class="d-flex justify-content-center gap-3">
+                                    <!-- On last page, no option buttons, only "Show Score" button -->
+                                    <button type="submit" name="action" value="retry" class="btn btn-danger" id="retryBtn">Try Again</button>
+                                    <button type="submit" name="action" value="back" class="btn btn-danger">Back to Scenario</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Continue Button -->
+    <div class="text-end mt-4">
+        <a href="" class="btn btn-danger">
+            Restart <i class="fa-solid fa-rotate-right ms-1"></i>
+        </a>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let heimlichPattern = ['left', 'right', 'left', 'right', 'left'];
+        let thrustIndex = 0;
+        let lastThrustTime = 0;
+        let maxDelayBetweenPresses = 4000;
+        let heimlichTimer;
+        let heimlichTimeLeft;
+        let heimlichAttempt = 0;
+        
+        let dialCode1 = [1, 0, 8];
+        let dialCode2 = [1, 1, 2];
+        let dialIndex1 = 0;
+        let dialIndex2 = 0;
+        let dialTimer;
+        let dialTimeLeft = 10;
+
+        let scenarioTimeLeft = 120;  // set the countdown duration in seconds
+        let scenarioInterval;
+
+        function setProgress(percent) {
+            $('#progress-bar').css('width', percent + '%').attr('aria-valuenow', percent);
+            
+            if (percent >= 100 && scenarioInterval) {
+                clearInterval(scenarioInterval);
+                scenarioInterval = null;
+            }
+        }
+
+        function startScenarioTimer() {
+            updateScenarioTimerDisplay();
+            scenarioInterval = setInterval(() => {
+                scenarioTimeLeft--;
+                updateScenarioTimerDisplay();
+                if (scenarioTimeLeft <= 0) {
+                    clearInterval(scenarioInterval);
+                    selectOption("timeout");
+                }
+            }, 1000);
+        }
+
+        function updateScenarioTimerDisplay() {
+            const minutes = Math.floor(scenarioTimeLeft / 60);
+            const seconds = scenarioTimeLeft % 60;
+            $('#scenario-timer').text(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+        }
+
+        $(document).ready(function() {
+            startScenarioTimer();
+        });
+
+        function startDialGame() {
+            // Reset both indices
+            dialIndex1 = 0;
+            dialIndex2 = 0;
+            dialTimeLeft = 5;
+            $('#dial-sequence').text('');
+            updateDialTimer();
+
+            dialTimer = setInterval(() => {
+                dialTimeLeft--;
+                updateDialTimer();
+                if (dialTimeLeft <= 0) {
+                    clearInterval(dialTimer);
+                    ambulanceResult('fail');
+                }
+            }, 1000);
+        }
+
+        function updateDialTimer() {
+            $('#call-timer').text(`Time left: ${dialTimeLeft}s`);
+        }
+
+        function pressDial(num) {
+            $('#dial-sequence').append(num);
+
+            // Check for code 1
+            if (dialIndex1 !== -1 && num === dialCode1[dialIndex1]) {
+                dialIndex1++;
+            } else {
+                dialIndex1 = -1;
+            }
+
+            // Check for code 2
+            if (dialIndex2 !== -1 && num === dialCode2[dialIndex2]) {
+                dialIndex2++;
+            } else {
+                dialIndex2 = -1;
+            }
+
+            // If either code has been fully entered:
+            if (dialIndex1 === dialCode1.length || dialIndex2 === dialCode2.length) {
+                clearInterval(dialTimer);
+                ambulanceResult('success');
+            }
+
+            // If both dial attempts are marked invalid, it's a failure:
+            if (dialIndex1 === -1 && dialIndex2 === -1) {
+                clearInterval(dialTimer);
+                ambulanceResult('fail');
+            }
+        }
+
+        function ambulanceResult(status) {
+            if (status === 'success') {
+                setProgress(80);
+                interventionResult = 'success';
+                $('#dialogue-text').html('<strong>Narrator:</strong> "You successfully dialed the emergency number. Help is on the way!"');
+                $('#option-heading').text("✅ Ambulance dispatched immediately");
+                $('#options-container .d-inline-flex').html( `<button class="btn btn-success mt-2" onclick="selectOption('partial')">Finish</button>
+                `);
+            } else {
+                setProgress(80);
+                $('#dialogue-text').html('<strong>Narrator:</strong> "You fumbled and dialed the wrong number. No help is coming yet."</strong>');
+                $('#option-heading').text("❌ You failed to call for help.");
+                $('#options-container .d-inline-flex').html(`
+                    <button class="btn btn-danger mt-2" onclick="selectOption('fail')">Finish</button>
+                `);
+            }
+        }
+
+        function handleCPRChoice(stage) {
+            if (stage === 'correct') {
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Correct hand position! Now select the correct compression rate."');
+                $('#option-heading').text("Step 2: Compression Rate");
+                $('#options-container .d-inline-flex').html(`
+                    <div class="d-flex flex-wrap gap-3 justify-content-center">
+
+                        <div class="position-relative rounded-circle overflow-hidden" style="width: 120px; height: 120px; cursor: pointer;" onclick="selectOption('fail')">
+                            <img src="{% static 'images/cpr_rate_wrong1.gif' %}" class="w-100 h-100 object-fit-cover">
+                            <div class="position-absolute text-light top-0 start-0 w-100 h-100 bg-white bg-opacity-25 d-flex align-items-center justify-content-center fw-bold">
+                                3 per second
+                            </div>
+                        </div>
+
+                        <div class="position-relative rounded-circle overflow-hidden" style="width: 120px; height: 120px; cursor: pointer;" onclick="finishCPR('success')">
+                            <img src="{% static 'images/cpr_rate_correct.gif' %}" class="w-100 h-100 object-fit-cover">
+                            <div class="position-absolute text-light top-0 start-0 w-100 h-100 bg-white bg-opacity-25 d-flex align-items-center justify-content-center fw-bold">
+                                2 per second
+                            </div>
+                        </div>
+
+                        <div class="position-relative rounded-circle overflow-hidden" style="width: 120px; height: 120px; cursor: pointer;" onclick="selectOption('fail')">
+                            <img src="{% static 'images/cpr_rate_wrong2.gif' %}" class="w-100 h-100 object-fit-cover">
+                            <div class="position-absolute text-light top-0 start-0 w-100 h-100 bg-white bg-opacity-25 d-flex align-items-center justify-content-center fw-bold">
+                                1 per second
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+        }
+
+        function finishCPR(result) {
+            if (result === 'success') {
+                setProgress(100);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_1.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Partial Success"');
+                $('#option-heading').text("Airway is cleared, but Shallan needs medical help. You did well, but you should call an ambulance.");
+                $('#options-container .d-inline-flex').html('');
+                $('#scoreInput').val(40);
+                updateOptions("Final Results", [], true);
+            } 
+        }
+
+        function startThrustGame() {
+            thrustIndex = 0;
+            lastThrustTime = Date.now();
+            heimlichTimeLeft = maxDelayBetweenPresses / 1000;
+
+            $('#heimlich-status').text("Start tapping!");
+            updateHeimlichTimerDisplay();
+
+            heimlichTimer = setInterval(() => {
+                heimlichTimeLeft--;
+                updateHeimlichTimerDisplay();
+
+                if (heimlichTimeLeft <= 0) {
+                    clearInterval(heimlichTimer);
+                    endHeimlich('fail');
+                }
+            }, 1000);
+        }
+
+        function updateHeimlichTimerDisplay() {
+            $('#heimlich-timer').text(`Time left: ${heimlichTimeLeft}s`);
+        }
+
+        function pressThrust(direction) {
+            let now = Date.now();
+
+            if (now - lastThrustTime > maxDelayBetweenPresses) {
+                endHeimlich('fail');
+                return;
+            }
+
+            if (direction === heimlichPattern[thrustIndex]) {
+                thrustIndex++;
+                $('#heimlich-status').text(`✅ ${thrustIndex} thrust${thrustIndex > 1 ? 's' : ''} correct!`);
+                lastThrustTime = now;
+
+                heimlichTimeLeft = maxDelayBetweenPresses / 1000;
+                updateHeimlichTimerDisplay();
+
+                if (thrustIndex === heimlichPattern.length) {
+                    endHeimlich('success');
+                }
+            } else {
+                endHeimlich('partial');
+            }
+        }
+
+        function endHeimlich(status) {
+            clearInterval(heimlichTimer);
+
+            if (status === 'success' && heimlichAttempt < 2) {
+                setProgress(50);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_2.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Still Blocked"');
+                updateOptions("It helped a bit, but she’s still choking. What now?", [
+                        { text: 'Try Heimlich again 🫳', id: 'heimlich' },
+                        { text: 'Try Back Blows 👋', id: 'sucess' },
+                        { text: 'Perform CPR 🫀', id: 'cpr' }
+                ]);
+            } else if (status === 'partial' && heimlichAttempt < 2) {
+                setProgress(50);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_2.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "You try your best. Something dislodges, but she’s still gasping."');
+                updateOptions("Choose your next action wisely", [
+                        { text: 'Call an ambulance', id: 'ambulance' },
+                        { text: 'Start CPR 🫀', id: 'cpr' },
+                ]);
+            } else if (status === 'fail' && heimlichAttempt < 2){
+                setProgress(80);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_5.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "You fumble. She goes limp... This is serious."');
+                updateOptions("What’s your emergency response?", [
+                        { text: 'Start CPR 🫀', id: 'cpr' },
+                ]);
+            } else if (status === 'success' && heimlichAttempt >= 2) {
+                setProgress(100);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_1.png' %}" + "')");
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_1.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Partial Success"');
+                $('#option-heading').text("Airway is cleared, but Shallan needs medical help. You did well, but you should call an ambulance.");
+                $('#options-container .d-inline-flex').html('');
+            } else if (status === 'partial' && heimlichAttempt >= 2) {
+                setProgress(80);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_2.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "She’s breathing — just barely. You’ve helped, but she needs urgent care."');
+                updateOptions("Choose the most critical step", [
+                        { text: 'Call an Ambulance 🚑', id: 'ambulance' },
+                ]);
+            } else {
+                setProgress(80);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_5.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "No change. She’s completely unresponsive now. You must take life-saving action immediately"');
+                updateOptions("What do you do?", [
+                        { text: 'Begin CPR 🫀', id: 'cpr' },
+                ]);
+            }
+        }
+
+        function submitScore() {
+            // Compute time taken as (60 - scenarioTimeLeft)
+            const timeTaken = 120 - scenarioTimeLeft;
+            $('#timeSpentInput').val(timeTaken);
+            
+            // Read final score from hidden input
+            const finalScore = parseInt($('#scoreInput').val(), 10);
+
+            // Create a message based on score (adjust thresholds as desired)
+            let message = "";
+            if(finalScore >= 85) {
+                message = "Outstanding! You handled the situation like a pro!";
+            } else if(finalScore >= 60) {
+                message = "Great job! There's some room for improvement.";
+            } else {
+                message = "You need more practice. Review your techniques!";
+            }
+            
+            // Update the result card with score, message, time taken, and attempt count.
+            $('#finalScore').text("You scored: " + finalScore + " points!");
+            $('#scoreMessage').text(message);
+            $('#timeMessage').text("Time taken: " + timeTaken + " seconds.");
+            // If your template context provided attempts (e.g., via a JavaScript variable or data-attribute), update it accordingly.
+            // For example, assume you set a global variable 'attemptsCount' from the context:
+            
+            // Hide scenario interactive parts and show the result card
+            //$('#options-container').hide();
+            //$('#narrator-container').hide;
+            $('#resultCard').removeClass('d-none');
+            $('#dialogbox').addClass('d-none');
+            $('#resultCard').css({
+                'background-color': 'transparent',
+                'box-shadow': 'none'
+            });
+            // $('#scoreForm').submit();
+        }
+
+        function selectOption(choice) {
+            console.log("Selected option:", choice);
+            if (choice === 'steak') {
+                setProgress(15);
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Shallan’s eyes widen. She grips her throat. She’s clearly in distress."');
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_2.png' %}" + "')");
+                updateOptions("Match symptoms with possible causes.", [
+                    { text: 'Choking 😵', id: 'choking' },
+                    { text: 'Cardiac Arrest ❤️‍🩹', id: 'collapse' },
+                    { text: 'Allergic Reaction 🤧', id: 'collapse' }
+                ]);
+            } else if(choice == 'choking'){
+                setProgress(20);
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Shallan is choking. Make a Move!"');
+                updateOptions("What do you do?", [
+                        { text: 'Heimlich Manoeuvre 🫳', id: 'heimlich' },
+                        { text: 'Back Blows 👋', id: 'back-blow' },
+                        { text: 'Give Water 💧', id: 'collapse' }
+                ]);
+            } else if (choice === 'heimlich') {
+                setProgress(35);
+                heimlichAttempt++; 
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_4.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Perform the Heimlich! Tap LEFT and RIGHT alternately 5 times to simulate abdominal thrusts!"');
+                $('#option-heading').text("Tap in the correct order!");
+                $('#options-container .d-inline-flex').html(`
+                    <div id="heimlich-status" class="mb-3 text-muted">Waiting for your input...</div>
+                    <div id="heimlich-timer" class="fw-semibold mb-3">Time left: 4s</div>
+                    <div class="d-flex gap-3">
+                        <button class="btn btn-light" onclick="pressThrust('left')">⬅️ Left Thrust</button>
+                        <button class="btn btn-light" onclick="pressThrust('right')">➡️ Right Thrust</button>
+                    </div>
+                `);
+                startThrustGame();
+            } else if(choice == 'collapse'){
+                setProgress(50);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_5.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Shallan loses consciousness and slumps in her seat. She’s no longer responding, and her breathing is either very shallow or has stopped."');
+                updateOptions("She’s unresponsive — what do you do next?", [
+                        { text: 'Begin CPR 🫀', id: 'cpr' },
+                        { text: 'Look for an AED ⚡', id: 'fail' },
+                        { text: 'Try the Heimlich Manoeuvre 🫳', id: 'fail' }
+                ]);
+            } else if(choice == 'back-blow'){
+                setProgress(35);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_4.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Back Blows Fails"');
+                updateOptions("Back blows didn’t help. Shallan worsens.", [
+                        { text: 'Heimlich 🫳', id: 'heimlich' },
+                        { text: 'Hit her under diaphragm 🫁', id: 'fail' },
+                ]);
+            } else if(choice == 'wasted-effort'){
+                setProgress(50);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_5.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "CPR Confusion"');
+                updateOptions("She’s still breathing — CPR was inappropriate. You wasted precious time.", [
+                        { text: 'Next', id: 'fail' },
+                ]);
+            } else if(choice == 'cpr'){
+                setProgress(80);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_6.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Time is critical. Let’s perform CPR. First, select the correct hand position."');
+                $('#option-heading').text("Step 1: Hand Position");
+                $('#options-container .d-inline-flex').html(`
+                    <div class="d-flex flex-wrap gap-3 justify-content-center">
+                        <img src="{% static 'images/cpr_wrong1.png' %}" class="cpr-option rounded-circle border" style="width: 120px; cursor: pointer;" onclick="selectOption('fail')">
+                        <img src="{% static 'images/cpr_correct.png' %}" class="cpr-option rounded-circle border" style="width: 120px; cursor: pointer;" onclick="handleCPRChoice('correct')">
+                        <img src="{% static 'images/cpr_wrong2.png' %}" class="cpr-option rounded-circle border" style="width: 120px; cursor: pointer;" onclick="selectOption('fail')">
+                    </div>
+                `);
+            } else if(choice == 'sucess'){
+                setProgress(100);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_1.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Total Success!"');
+                $('#option-heading').text(" Shallan is stable. She praises your response");
+                $('#options-container .d-inline-flex').html('');
+                $('#scoreInput').val(100);
+                updateOptions("Final Results", [], true);
+            } else if (choice === 'ambulance') {
+                setProgress(80);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_7.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Quick, call emergency services! Dial 1-0-8 or 1-1-2."');
+                $('#option-heading').text("Dial Emergency Number");
+
+                $('#options-container .d-inline-flex').html(`
+                    <div id="call-status" class="mb-2 text-muted">Dialing: <span id="dial-sequence"></span></div>
+                    <div id="call-timer" class="fw-semibold mb-3">Time left: 5s</div>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center" style="max-width: 260px;">
+                        ${[1,2,3,4,5,6,7,8,9,0].map(n => `
+                            <button class="btn btn-light" style="width: 60px; height: 60px;" onclick="pressDial(${n})">${n}</button>
+                        `).join('')}
+                    </div>
+                `);
+
+                startDialGame();
+            } else if(choice == 'partial'){
+                //fail
+                console.log("Calling Inside Partial...");
+                setProgress(100);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_1.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "Partial Success"');
+                $('#option-heading').text("You did well, but Shallan needs medical help.");
+                $('#options-container .d-inline-flex').html('');
+                $('#scoreInput').val(40);
+                updateOptions("Final Results", [], true);
+
+            } else if(choice == 'timeout'){
+                setProgress(100);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/hiking_3 - Copy.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "⏱️ Time’s up! You took too long to act. Help arrived too late."</strong>');
+                $('#option-heading').text("⚠️ You failed to act in time.");
+                $('#options-container .d-inline-flex').html('');
+            } else if(choice == 'fail'){
+                //fail
+                setProgress(100);
+                $('.scenario-bg').css('background-image', "url('" + "{% static 'images/restaurant_5.png' %}" + "')");
+                $('#dialogue-text').html('<strong>Narrator:</strong> "You Failed"');
+                $('#option-heading').text("You hesitated, took wrong steps, or didn’t act fast enough. Shallan is unconscious when help arrives — it’s too late.");
+                $('#options-container .d-inline-flex').html('');
+                $('#scoreInput').val(0);
+                updateOptions("Final Results", [], true);
+            }
+        }
+
+        function updateOptions(heading, options, showScore = false) {
+            console.log("Calling updateOptions...");
+            $('#option-heading').text(heading);
+            let buttons = '';
+            if(options.length > 0) {
+                options.forEach(opt => {
+                    buttons += `<button class="btn btn-light text-start mb-2" onclick="selectOption('${opt.id}')">${opt.text}</button>`;
+                });
+                // If you want the score button in addition to the options, append it.
+                if(showScore) {
+                    buttons += `<button class="btn btn-primary mt-2" onclick="submitScore()">Show Score</button>`;
+                }
+            } else {
+                // If no options are provided, display only the score button.
+                buttons = `<button class="btn btn-primary" onclick="submitScore()">Show Score</button>`;
+            }
+            $('#options-container .d-inline-flex').html(buttons);
+        }
+    </script>
+</div>
+{% endblock %}
